@@ -213,8 +213,7 @@ fun MainShell(outerNavController: NavHostController) {
             }
 
             composable(Screen.Dashboard.route) {
-                // TODO Phase 6: Replace with DashboardScreen()
-                PlaceholderScreen(label = "Balance")
+                com.workdiary.app.ui.screens.DashboardScreen()
             }
 
             composable(Screen.Settings.route) {

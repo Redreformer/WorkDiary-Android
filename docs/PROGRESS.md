@@ -36,7 +36,7 @@
 | SettingsView.swift | settings | ⏳ pending | | |
 | BookedView.swift | balance | ⏳ pending | | |
 | DashboardView.swift | balance | ⏳ pending | | |
-| CalendarDayCell..swift | calendar | ⏳ pending | | |
+| CalendarDayCell..swift | calendar | ✅ done | ui/components/CalendarDayCell.kt, WeekRowCell.kt, DayHeaderCell.kt, EmptyMonthCell.kt | Phase 8 – 2026-03-09 |
 | CalendarView.swift | calendar | ⏳ pending | | |
 | PDFManager.swift | OCR/PDF | ⏳ pending | | |
 | ZoomableImageView.swift | OCR/PDF | ⏳ pending | | |
@@ -51,3 +51,4 @@ _None yet_
 
 ## Log
 - 2026-03-09: Project initialised. GitHub repo created. Android skeleton built. Analysis starting.
+- 2026-03-09: Phase 8 complete. Calendar cell composables generated: CalendarDayCell, WeekRowCell, DayHeaderCell, EmptyMonthCell. Committed to GitHub (250081e). Ready for Phase 9 (CalendarScreen).

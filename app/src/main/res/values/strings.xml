@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">My Work Diary</string>
+
+    <!-- Bottom navigation bar labels — match iOS tab titles -->
+    <string name="nav_calendar">Calendar</string>
+    <string name="nav_holidays">Holidays</string>
+    <string name="nav_balance">Balance</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Content descriptions for nav icons (accessibility) -->
+    <string name="cd_nav_calendar">Open calendar view</string>
+    <string name="cd_nav_holidays">Open booked holidays</string>
+    <string name="cd_nav_balance">Open leave balance dashboard</string>
+    <string name="cd_nav_settings">Open settings</string>
+</resources>

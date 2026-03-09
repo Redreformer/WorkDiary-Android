@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AndroidManifest.xml — Work Diary
+    ─────────────────────────────────────────────────────────────────────────────
+    Declares:
+      • Application class (WorkDiaryApp — @HiltAndroidApp)
+      • MainActivity — single-Activity Compose entry point
+      • Runtime permissions required by the app
+      • FileProvider for sharing generated PDFs (leave summaries / duty board exports)
+    ─────────────────────────────────────────────────────────────────────────────
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ─────────────────────────────────────────────────────────────────────
+         Permissions
+         ───────────────────────────────────────────────────────────────────── -->
+
+    <!-- Internet: required for future remote duty-board lookup / PayPal / Buy Me a Coffee links -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Camera: used for photographing the duty roster (maps to iOS UIImagePickerController
+         with .camera source in CalendarView.swift). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Media images: scoped-storage equivalent of Photos access.
+         READ_MEDIA_IMAGES targets API 33+; READ_EXTERNAL_STORAGE is the pre-33 fallback. -->
+    <uses-permission
+        android:name="android.permission.READ_MEDIA_IMAGES"
+        android:minSdkVersion="33" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!-- Notifications: used for the daily duty reminder (maps to iOS UNUserNotificationCenter). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Calendar read/write: used by CalendarManager to create all-day leave events
+         (maps to iOS EventKit / EKEventStore). -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+
+    <!-- Exact alarms: required on API 31+ for the daily notification at a precise time. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:minSdkVersion="31" />
+
+    <!-- ─────────────────────────────────────────────────────────────────────
+         Hardware features (optional — app works without a camera)
+         ───────────────────────────────────────────────────────────────────── -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+
+    <!-- ─────────────────────────────────────────────────────────────────────
+         Application
+         ───────────────────────────────────────────────────────────────────── -->
+    <application
+        android:name=".WorkDiaryApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.WorkDiary"
+        tools:targetApi="31">
+
+        <!-- ── MainActivity ─────────────────────────────────────────────── -->
+        <!--
+            Single-Activity host for the entire Compose UI.
+            - configChanges: prevent Activity recreation on orientation/keyboard changes;
+              Compose handles layout recomposition natively.
+            - windowSoftInputMode: adjustResize works best with edge-to-edge Compose layouts
+              that use imePadding() modifiers.
+            - exported: true required for LAUNCHER intent filter.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Deep-link support placeholder — expand per-route as screens are built. -->
+            <!--
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="workdiary" />
+            </intent-filter>
+            -->
+        </activity>
+
+        <!-- ── FileProvider ──────────────────────────────────────────────
+             Exposes files in the app's internal storage (filesDir) to external apps
+             (e.g., sharing generated leave-summary PDFs via ACTION_SEND).
+             Maps to the iOS PDFManager file sharing via UIActivityViewController.
+
+             The authority must match the authority string used in FileProvider.getUriForFile()
+             calls throughout the codebase. Convention: applicationId + ".fileprovider".
+
+             file_paths.xml defines which directories are accessible:
+               - files-path: maps to Context.filesDir (duty PDFs, photo cache)
+               - cache-path: maps to Context.cacheDir (temporary export PDFs)
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
+
+</manifest>

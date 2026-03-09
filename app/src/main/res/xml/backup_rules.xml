@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Auto Backup rules (API 31+ / Android 12+).
+    Excludes files that should not be backed up to Google Drive:
+      • Duty board PDFs (large, user must re-import)
+      • Day photos (user's own camera shots — privacy)
+    DataStore preferences are included in backup by default (allowable).
+-->
+<full-backup-content>
+    <exclude domain="file" path="MF.pdf" />
+    <exclude domain="file" path="SAT.pdf" />
+    <exclude domain="file" path="SUN.pdf" />
+    <exclude domain="file" path="." />   <!-- exclude all raw files; photos are large -->
+</full-backup-content>

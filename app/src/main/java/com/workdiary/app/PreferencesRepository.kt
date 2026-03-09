@@ -2,9 +2,11 @@ package com.workdiary.app
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.workdiary.app.data.storage.PrefsKeys
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -23,12 +25,15 @@ private val Context.dataStore by preferencesDataStore(name = "workdiary_prefs")
  * Preferences are exposed as [Flow]s so Compose can collect them reactively.
  *
  * ## iOS key mapping
- * | iOS `AppStorage` key        | DataStore key constant            |
- * |-----------------------------|-----------------------------------|
- * | `isDarkMode`                | [Keys.IS_DARK_THEME]              |
- * | `hasCompletedSetup`         | [Keys.HAS_COMPLETED_SETUP]        |
- * | `activeProfile`             | [Keys.ACTIVE_PROFILE]             |
- * | `startOnMonday`             | [Keys.START_ON_MONDAY]            |
+ * | iOS `AppStorage` key              | DataStore key / accessor                        |
+ * |-----------------------------------|-------------------------------------------------|
+ * | `isDarkMode`                      | [Keys.IS_DARK_THEME]                            |
+ * | `hasCompletedSetup`               | [Keys.HAS_COMPLETED_SETUP]                      |
+ * | `activeProfile`                   | [Keys.ACTIVE_PROFILE]                           |
+ * | `startOnMonday`                   | [Keys.START_ON_MONDAY]                          |
+ * | `isHoursMode_{profile}`           | [isHoursModeForProfile] / [setIsHoursMode]      |
+ * | `annualAllowance_{profile}`       | [annualAllowanceForProfile] / [setAnnualAllowance] |
+ * | `hourlyAllowance_{profile}`       | [hourlyAllowanceForProfile] / [setHourlyAllowance] |
  */
 @Singleton
 class PreferencesRepository @Inject constructor(
@@ -36,7 +41,7 @@ class PreferencesRepository @Inject constructor(
 ) {
 
     // ──────────────────────────────────────────────────────────────────────
-    //  Key definitions
+    //  Key definitions — global (non-profile-scoped)
     // ──────────────────────────────────────────────────────────────────────
 
     object Keys {
@@ -47,7 +52,7 @@ class PreferencesRepository @Inject constructor(
     }
 
     // ──────────────────────────────────────────────────────────────────────
-    //  Flows
+    //  Global flows
     // ──────────────────────────────────────────────────────────────────────
 
     /** Dark-theme preference. Defaults to `true` (matching iOS default). */
@@ -67,7 +72,50 @@ class PreferencesRepository @Inject constructor(
         .map { prefs -> prefs[Keys.START_ON_MONDAY] ?: true }
 
     // ──────────────────────────────────────────────────────────────────────
-    //  Mutators
+    //  Profile-scoped flows
+    //
+    //  Each function returns a Flow backed by a dynamically-named DataStore key,
+    //  mirroring the pattern used by KeyGen.swift on iOS.
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Emits whether [profile] tracks leave in hours (`true`) or days (`false`).
+     *
+     * iOS equivalent: `AppStorage(KeyGen.isHours(profile))` — default `false`.
+     *
+     * @param profile Profile identifier, e.g. `"User1"`.
+     */
+    fun isHoursModeForProfile(profile: String): Flow<Boolean> = context.dataStore.data
+        .map { prefs ->
+            prefs[booleanPreferencesKey(PrefsKeys.isHours(profile))] ?: false
+        }
+
+    /**
+     * Emits the annual leave *days* allowance for [profile].
+     *
+     * iOS equivalent: `AppStorage(KeyGen.annual(profile))` — default `25.0`.
+     *
+     * @param profile Profile identifier, e.g. `"User1"`.
+     */
+    fun annualAllowanceForProfile(profile: String): Flow<Double> = context.dataStore.data
+        .map { prefs ->
+            prefs[doublePreferencesKey(PrefsKeys.annual(profile))] ?: 25.0
+        }
+
+    /**
+     * Emits the annual leave *hours* allowance for [profile].
+     *
+     * iOS equivalent: `AppStorage(KeyGen.hourly(profile))` — default `187.5`.
+     *
+     * @param profile Profile identifier, e.g. `"User1"`.
+     */
+    fun hourlyAllowanceForProfile(profile: String): Flow<Double> = context.dataStore.data
+        .map { prefs ->
+            prefs[doublePreferencesKey(PrefsKeys.hourly(profile))] ?: 187.5
+        }
+
+    // ──────────────────────────────────────────────────────────────────────
+    //  Global mutators
     // ──────────────────────────────────────────────────────────────────────
 
     /** Persists the dark-theme preference. */
@@ -88,5 +136,45 @@ class PreferencesRepository @Inject constructor(
     /** Persists the calendar week-start preference. */
     suspend fun setStartOnMonday(value: Boolean) {
         context.dataStore.edit { prefs -> prefs[Keys.START_ON_MONDAY] = value }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    //  Profile-scoped mutators
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Persists the hours-mode flag for [profile].
+     *
+     * @param profile  Profile identifier, e.g. `"User1"`.
+     * @param isHours  `true` = track in hours; `false` = track in days.
+     */
+    suspend fun setIsHoursMode(profile: String, isHours: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[booleanPreferencesKey(PrefsKeys.isHours(profile))] = isHours
+        }
+    }
+
+    /**
+     * Persists the annual leave *days* allowance for [profile].
+     *
+     * @param profile Profile identifier, e.g. `"User1"`.
+     * @param days    Annual allowance in days.
+     */
+    suspend fun setAnnualAllowance(profile: String, days: Double) {
+        context.dataStore.edit { prefs ->
+            prefs[doublePreferencesKey(PrefsKeys.annual(profile))] = days
+        }
+    }
+
+    /**
+     * Persists the annual leave *hours* allowance for [profile].
+     *
+     * @param profile Profile identifier, e.g. `"User1"`.
+     * @param hours   Annual allowance in hours.
+     */
+    suspend fun setHourlyAllowance(profile: String, hours: Double) {
+        context.dataStore.edit { prefs ->
+            prefs[doublePreferencesKey(PrefsKeys.hourly(profile))] = hours
+        }
     }
 }

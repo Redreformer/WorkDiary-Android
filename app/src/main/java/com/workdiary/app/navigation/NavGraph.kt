@@ -256,8 +256,7 @@ fun WorkDiaryNavGraph(
             enterTransition = { fadeIn(animationSpec = tween(300)) },
             exitTransition  = { fadeOut(animationSpec = tween(300)) },
         ) {
-            // TODO Phase 3b: Replace with SplashScreen(navController)
-            PlaceholderScreen(label = "Splash")
+            com.workdiary.app.ui.screens.SplashScreen(navController = navController)
         }
 
         // ── Onboarding ──────────────────────────────────────────────────────
@@ -276,8 +275,7 @@ fun WorkDiaryNavGraph(
                 )
             },
         ) {
-            // TODO Phase 8: Replace with OnboardingScreen(navController)
-            PlaceholderScreen(label = "Onboarding")
+            com.workdiary.app.ui.screens.OnboardingScreen(navController = navController)
         }
 
         // ── Main shell (bottom nav) ──────────────────────────────────────────

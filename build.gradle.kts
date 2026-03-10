@@ -18,8 +18,8 @@
 
 plugins {
     // Android Application / Library plugin — do NOT apply here; applied in submodules.
-    id("com.android.application")        version "8.5.2"  apply false
-    id("com.android.library")            version "8.5.2"  apply false
+    id("com.android.application")        version "8.13.2" apply false
+    id("com.android.library")            version "8.13.2" apply false
 
     // Kotlin — do NOT apply here; applied in submodules.
     id("org.jetbrains.kotlin.android")   version "2.0.21" apply false

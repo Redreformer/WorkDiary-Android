@@ -4,7 +4,7 @@
             "outputFile": "com.workdiary.app-mergeDebugResources-73:/values-v21/values-v21.xml",
             "map": [
                 {
-                    "source": "/Users/aiworker/.gradle/caches/9.0.0/transforms/e3b5471c00c2231905445a8c360f91e0/transformed/core-1.13.1/res/values-v21/values-v21.xml",
+                    "source": "/Users/aiworker/.gradle/caches/9.0.0/transforms/d8051a01458d224e99e8df4896b16e17/transformed/core-1.13.1/res/values-v21/values-v21.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,13",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4",
@@ -23,7 +23,7 @@
                     }
                 },
                 {
-                    "source": "/Users/aiworker/.gradle/caches/9.0.0/transforms/54ade03fe39aad763a16e33b8a75f1ce/transformed/media-1.0.0/res/values-v21/values-v21.xml",
+                    "source": "/Users/aiworker/.gradle/caches/9.0.0/transforms/b63fbb9bb1104117917968c81aa233b0/transformed/media-1.0.0/res/values-v21/values-v21.xml",
                     "from": {
                         "startLines": "2,5,8,11",
                         "startColumns": "4,4,4,4",

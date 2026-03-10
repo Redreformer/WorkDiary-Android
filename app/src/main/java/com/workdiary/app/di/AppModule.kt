@@ -15,9 +15,42 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-// Module-level DataStore extension property.
-// Uses the same name ("workdiary_prefs") as the one inside PreferencesRepository
-// so they resolve to the same on-disk file. The `preferencesDataStore` delegate
-// guarantees a single instance per name per process via a static map.
-private val Context.appDataStore: DataStore<Preferences>
+/** Single DataStore delegate — the ONLY place this is defined. */
+private val Context.workDiaryDataStore: DataStore<Preferences>
         by preferencesDataStore(name = "workdiary_prefs")
+
+@Module
+@InstallIn(SingletonComponent::class)
+object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideDataStore(
+        @ApplicationContext context: Context,
+    ): DataStore<Preferences> = context.workDiaryDataStore
+
+    @Provides
+    @Singleton
+    fun providePreferencesRepository(
+        @ApplicationContext context: Context,
+        dataStore: DataStore<Preferences>,
+    ): PreferencesRepository = PreferencesRepository(context, dataStore)
+
+    @Provides
+    @Singleton
+    fun provideCalendarManager(
+        @ApplicationContext context: Context,
+    ): CalendarManager = CalendarManager(context)
+
+    @Provides
+    @Singleton
+    fun providePhotoManager(
+        @ApplicationContext context: Context,
+    ): PhotoManager = PhotoManager(context)
+
+    @Provides
+    @Singleton
+    fun providePDFManager(
+        @ApplicationContext context: Context,
+    ): PDFManager = PDFManager(context)
+}

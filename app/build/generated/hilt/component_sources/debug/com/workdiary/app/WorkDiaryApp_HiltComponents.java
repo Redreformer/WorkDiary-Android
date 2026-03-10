@@ -1,6 +1,7 @@
 package com.workdiary.app;
 
 import androidx.hilt.work.HiltWrapper_WorkerFactoryModule;
+import com.workdiary.app.di.AppModule;
 import com.workdiary.app.ui.screens.CalendarViewModel_HiltModules;
 import com.workdiary.app.ui.screens.DashboardViewModel_HiltModules;
 import com.workdiary.app.ui.screens.HolidaysViewModel_HiltModules;
@@ -132,6 +133,7 @@ public final class WorkDiaryApp_HiltComponents {
 
   @Component(
       modules = {
+          AppModule.class,
           ApplicationContextModule.class,
           HiltWrapper_FragmentGetContextFix_FragmentGetContextFixModule.class,
           HiltWrapper_WorkerFactoryModule.class,

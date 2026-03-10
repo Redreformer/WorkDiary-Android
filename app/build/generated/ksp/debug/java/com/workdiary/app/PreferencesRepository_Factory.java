@@ -1,6 +1,8 @@
 package com.workdiary.app;
 
 import android.content.Context;
+import androidx.datastore.core.DataStore;
+import androidx.datastore.preferences.core.Preferences;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
 import dagger.internal.QualifierMetadata;
@@ -25,20 +27,26 @@ import javax.inject.Provider;
 public final class PreferencesRepository_Factory implements Factory<PreferencesRepository> {
   private final Provider<Context> contextProvider;
 
-  public PreferencesRepository_Factory(Provider<Context> contextProvider) {
+  private final Provider<DataStore<Preferences>> dataStoreProvider;
+
+  public PreferencesRepository_Factory(Provider<Context> contextProvider,
+      Provider<DataStore<Preferences>> dataStoreProvider) {
     this.contextProvider = contextProvider;
+    this.dataStoreProvider = dataStoreProvider;
   }
 
   @Override
   public PreferencesRepository get() {
-    return newInstance(contextProvider.get());
+    return newInstance(contextProvider.get(), dataStoreProvider.get());
   }
 
-  public static PreferencesRepository_Factory create(Provider<Context> contextProvider) {
-    return new PreferencesRepository_Factory(contextProvider);
+  public static PreferencesRepository_Factory create(Provider<Context> contextProvider,
+      Provider<DataStore<Preferences>> dataStoreProvider) {
+    return new PreferencesRepository_Factory(contextProvider, dataStoreProvider);
   }
 
-  public static PreferencesRepository newInstance(Context context) {
-    return new PreferencesRepository(context);
+  public static PreferencesRepository newInstance(Context context,
+      DataStore<Preferences> dataStore) {
+    return new PreferencesRepository(context, dataStore);
   }
 }

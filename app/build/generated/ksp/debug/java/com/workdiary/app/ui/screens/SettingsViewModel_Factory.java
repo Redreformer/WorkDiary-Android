@@ -1,6 +1,8 @@
 package com.workdiary.app.ui.screens;
 
 import android.app.Application;
+import androidx.datastore.core.DataStore;
+import androidx.datastore.preferences.core.Preferences;
 import com.workdiary.app.PreferencesRepository;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
@@ -28,23 +30,29 @@ public final class SettingsViewModel_Factory implements Factory<SettingsViewMode
 
   private final Provider<PreferencesRepository> repoProvider;
 
+  private final Provider<DataStore<Preferences>> storeProvider;
+
   public SettingsViewModel_Factory(Provider<Application> appProvider,
-      Provider<PreferencesRepository> repoProvider) {
+      Provider<PreferencesRepository> repoProvider,
+      Provider<DataStore<Preferences>> storeProvider) {
     this.appProvider = appProvider;
     this.repoProvider = repoProvider;
+    this.storeProvider = storeProvider;
   }
 
   @Override
   public SettingsViewModel get() {
-    return newInstance(appProvider.get(), repoProvider.get());
+    return newInstance(appProvider.get(), repoProvider.get(), storeProvider.get());
   }
 
   public static SettingsViewModel_Factory create(Provider<Application> appProvider,
-      Provider<PreferencesRepository> repoProvider) {
-    return new SettingsViewModel_Factory(appProvider, repoProvider);
+      Provider<PreferencesRepository> repoProvider,
+      Provider<DataStore<Preferences>> storeProvider) {
+    return new SettingsViewModel_Factory(appProvider, repoProvider, storeProvider);
   }
 
-  public static SettingsViewModel newInstance(Application app, PreferencesRepository repo) {
-    return new SettingsViewModel(app, repo);
+  public static SettingsViewModel newInstance(Application app, PreferencesRepository repo,
+      DataStore<Preferences> store) {
+    return new SettingsViewModel(app, repo, store);
   }
 }

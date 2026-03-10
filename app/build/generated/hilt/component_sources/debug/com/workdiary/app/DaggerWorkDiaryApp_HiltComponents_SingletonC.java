@@ -3,9 +3,15 @@ package com.workdiary.app;
 import android.app.Activity;
 import android.app.Service;
 import android.view.View;
+import androidx.datastore.core.DataStore;
+import androidx.datastore.preferences.core.Preferences;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.SavedStateHandle;
 import androidx.lifecycle.ViewModel;
+import com.workdiary.app.di.AppModule_ProvideDataStoreFactory;
+import com.workdiary.app.di.AppModule_ProvidePDFManagerFactory;
+import com.workdiary.app.di.AppModule_ProvidePhotoManagerFactory;
+import com.workdiary.app.di.AppModule_ProvidePreferencesRepositoryFactory;
 import com.workdiary.app.ui.screens.CalendarViewModel;
 import com.workdiary.app.ui.screens.CalendarViewModel_HiltModules;
 import com.workdiary.app.ui.screens.DashboardViewModel;
@@ -401,22 +407,22 @@ public final class DaggerWorkDiaryApp_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_workdiary_app_MainViewModel = "com.workdiary.app.MainViewModel";
+      static String com_workdiary_app_ui_screens_SettingsViewModel = "com.workdiary.app.ui.screens.SettingsViewModel";
 
       static String com_workdiary_app_ui_screens_SplashViewModel = "com.workdiary.app.ui.screens.SplashViewModel";
 
       static String com_workdiary_app_ui_screens_HolidaysViewModel = "com.workdiary.app.ui.screens.HolidaysViewModel";
 
-      static String com_workdiary_app_ui_screens_DashboardViewModel = "com.workdiary.app.ui.screens.DashboardViewModel";
-
       static String com_workdiary_app_ui_screens_CalendarViewModel = "com.workdiary.app.ui.screens.CalendarViewModel";
 
-      static String com_workdiary_app_ui_screens_SettingsViewModel = "com.workdiary.app.ui.screens.SettingsViewModel";
+      static String com_workdiary_app_ui_screens_DashboardViewModel = "com.workdiary.app.ui.screens.DashboardViewModel";
+
+      static String com_workdiary_app_MainViewModel = "com.workdiary.app.MainViewModel";
 
       static String com_workdiary_app_ui_screens_OnboardingViewModel = "com.workdiary.app.ui.screens.OnboardingViewModel";
 
       @KeepFieldType
-      MainViewModel com_workdiary_app_MainViewModel2;
+      SettingsViewModel com_workdiary_app_ui_screens_SettingsViewModel2;
 
       @KeepFieldType
       SplashViewModel com_workdiary_app_ui_screens_SplashViewModel2;
@@ -425,13 +431,13 @@ public final class DaggerWorkDiaryApp_HiltComponents_SingletonC {
       HolidaysViewModel com_workdiary_app_ui_screens_HolidaysViewModel2;
 
       @KeepFieldType
-      DashboardViewModel com_workdiary_app_ui_screens_DashboardViewModel2;
-
-      @KeepFieldType
       CalendarViewModel com_workdiary_app_ui_screens_CalendarViewModel2;
 
       @KeepFieldType
-      SettingsViewModel com_workdiary_app_ui_screens_SettingsViewModel2;
+      DashboardViewModel com_workdiary_app_ui_screens_DashboardViewModel2;
+
+      @KeepFieldType
+      MainViewModel com_workdiary_app_MainViewModel2;
 
       @KeepFieldType
       OnboardingViewModel com_workdiary_app_ui_screens_OnboardingViewModel2;
@@ -495,38 +501,38 @@ public final class DaggerWorkDiaryApp_HiltComponents_SingletonC {
     private static final class LazyClassKeyProvider {
       static String com_workdiary_app_ui_screens_SettingsViewModel = "com.workdiary.app.ui.screens.SettingsViewModel";
 
-      static String com_workdiary_app_ui_screens_SplashViewModel = "com.workdiary.app.ui.screens.SplashViewModel";
+      static String com_workdiary_app_MainViewModel = "com.workdiary.app.MainViewModel";
 
       static String com_workdiary_app_ui_screens_HolidaysViewModel = "com.workdiary.app.ui.screens.HolidaysViewModel";
 
-      static String com_workdiary_app_ui_screens_CalendarViewModel = "com.workdiary.app.ui.screens.CalendarViewModel";
-
       static String com_workdiary_app_ui_screens_OnboardingViewModel = "com.workdiary.app.ui.screens.OnboardingViewModel";
 
-      static String com_workdiary_app_ui_screens_DashboardViewModel = "com.workdiary.app.ui.screens.DashboardViewModel";
+      static String com_workdiary_app_ui_screens_SplashViewModel = "com.workdiary.app.ui.screens.SplashViewModel";
 
-      static String com_workdiary_app_MainViewModel = "com.workdiary.app.MainViewModel";
+      static String com_workdiary_app_ui_screens_CalendarViewModel = "com.workdiary.app.ui.screens.CalendarViewModel";
+
+      static String com_workdiary_app_ui_screens_DashboardViewModel = "com.workdiary.app.ui.screens.DashboardViewModel";
 
       @KeepFieldType
       SettingsViewModel com_workdiary_app_ui_screens_SettingsViewModel2;
 
       @KeepFieldType
-      SplashViewModel com_workdiary_app_ui_screens_SplashViewModel2;
+      MainViewModel com_workdiary_app_MainViewModel2;
 
       @KeepFieldType
       HolidaysViewModel com_workdiary_app_ui_screens_HolidaysViewModel2;
 
       @KeepFieldType
-      CalendarViewModel com_workdiary_app_ui_screens_CalendarViewModel2;
-
-      @KeepFieldType
       OnboardingViewModel com_workdiary_app_ui_screens_OnboardingViewModel2;
 
       @KeepFieldType
-      DashboardViewModel com_workdiary_app_ui_screens_DashboardViewModel2;
+      SplashViewModel com_workdiary_app_ui_screens_SplashViewModel2;
 
       @KeepFieldType
-      MainViewModel com_workdiary_app_MainViewModel2;
+      CalendarViewModel com_workdiary_app_ui_screens_CalendarViewModel2;
+
+      @KeepFieldType
+      DashboardViewModel com_workdiary_app_ui_screens_DashboardViewModel2;
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
@@ -551,25 +557,25 @@ public final class DaggerWorkDiaryApp_HiltComponents_SingletonC {
       public T get() {
         switch (id) {
           case 0: // com.workdiary.app.ui.screens.CalendarViewModel 
-          return (T) new CalendarViewModel(ApplicationContextModule_ProvideApplicationFactory.provideApplication(singletonCImpl.applicationContextModule), singletonCImpl.preferencesRepositoryProvider.get(), singletonCImpl.photoManagerProvider.get(), singletonCImpl.pDFManagerProvider.get());
+          return (T) new CalendarViewModel(ApplicationContextModule_ProvideApplicationFactory.provideApplication(singletonCImpl.applicationContextModule), singletonCImpl.providePreferencesRepositoryProvider.get(), singletonCImpl.providePhotoManagerProvider.get(), singletonCImpl.providePDFManagerProvider.get());
 
           case 1: // com.workdiary.app.ui.screens.DashboardViewModel 
-          return (T) new DashboardViewModel(ApplicationContextModule_ProvideApplicationFactory.provideApplication(singletonCImpl.applicationContextModule), singletonCImpl.preferencesRepositoryProvider.get());
+          return (T) new DashboardViewModel(ApplicationContextModule_ProvideApplicationFactory.provideApplication(singletonCImpl.applicationContextModule), singletonCImpl.providePreferencesRepositoryProvider.get());
 
           case 2: // com.workdiary.app.ui.screens.HolidaysViewModel 
-          return (T) new HolidaysViewModel(ApplicationContextModule_ProvideApplicationFactory.provideApplication(singletonCImpl.applicationContextModule), singletonCImpl.preferencesRepositoryProvider.get());
+          return (T) new HolidaysViewModel(ApplicationContextModule_ProvideApplicationFactory.provideApplication(singletonCImpl.applicationContextModule), singletonCImpl.providePreferencesRepositoryProvider.get());
 
           case 3: // com.workdiary.app.MainViewModel 
-          return (T) new MainViewModel(singletonCImpl.preferencesRepositoryProvider.get());
+          return (T) new MainViewModel(singletonCImpl.providePreferencesRepositoryProvider.get());
 
           case 4: // com.workdiary.app.ui.screens.OnboardingViewModel 
-          return (T) new OnboardingViewModel(singletonCImpl.preferencesRepositoryProvider.get());
+          return (T) new OnboardingViewModel(singletonCImpl.providePreferencesRepositoryProvider.get());
 
           case 5: // com.workdiary.app.ui.screens.SettingsViewModel 
-          return (T) new SettingsViewModel(ApplicationContextModule_ProvideApplicationFactory.provideApplication(singletonCImpl.applicationContextModule), singletonCImpl.preferencesRepositoryProvider.get());
+          return (T) new SettingsViewModel(ApplicationContextModule_ProvideApplicationFactory.provideApplication(singletonCImpl.applicationContextModule), singletonCImpl.providePreferencesRepositoryProvider.get(), singletonCImpl.provideDataStoreProvider.get());
 
           case 6: // com.workdiary.app.ui.screens.SplashViewModel 
-          return (T) new SplashViewModel(singletonCImpl.preferencesRepositoryProvider.get());
+          return (T) new SplashViewModel(singletonCImpl.providePreferencesRepositoryProvider.get());
 
           default: throw new AssertionError(id);
         }
@@ -651,11 +657,13 @@ public final class DaggerWorkDiaryApp_HiltComponents_SingletonC {
 
     private final SingletonCImpl singletonCImpl = this;
 
-    private Provider<PhotoManager> photoManagerProvider;
+    private Provider<PhotoManager> providePhotoManagerProvider;
 
-    private Provider<PreferencesRepository> preferencesRepositoryProvider;
+    private Provider<DataStore<Preferences>> provideDataStoreProvider;
 
-    private Provider<PDFManager> pDFManagerProvider;
+    private Provider<PreferencesRepository> providePreferencesRepositoryProvider;
+
+    private Provider<PDFManager> providePDFManagerProvider;
 
     private SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
       this.applicationContextModule = applicationContextModuleParam;
@@ -665,9 +673,10 @@ public final class DaggerWorkDiaryApp_HiltComponents_SingletonC {
 
     @SuppressWarnings("unchecked")
     private void initialize(final ApplicationContextModule applicationContextModuleParam) {
-      this.photoManagerProvider = DoubleCheck.provider(new SwitchingProvider<PhotoManager>(singletonCImpl, 0));
-      this.preferencesRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<PreferencesRepository>(singletonCImpl, 1));
-      this.pDFManagerProvider = DoubleCheck.provider(new SwitchingProvider<PDFManager>(singletonCImpl, 2));
+      this.providePhotoManagerProvider = DoubleCheck.provider(new SwitchingProvider<PhotoManager>(singletonCImpl, 0));
+      this.provideDataStoreProvider = DoubleCheck.provider(new SwitchingProvider<DataStore<Preferences>>(singletonCImpl, 2));
+      this.providePreferencesRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<PreferencesRepository>(singletonCImpl, 1));
+      this.providePDFManagerProvider = DoubleCheck.provider(new SwitchingProvider<PDFManager>(singletonCImpl, 3));
     }
 
     @Override
@@ -676,7 +685,7 @@ public final class DaggerWorkDiaryApp_HiltComponents_SingletonC {
 
     @Override
     public PhotoManager photoManager() {
-      return photoManagerProvider.get();
+      return providePhotoManagerProvider.get();
     }
 
     @Override
@@ -709,13 +718,16 @@ public final class DaggerWorkDiaryApp_HiltComponents_SingletonC {
       public T get() {
         switch (id) {
           case 0: // com.workdiary.app.utils.PhotoManager 
-          return (T) new PhotoManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+          return (T) AppModule_ProvidePhotoManagerFactory.providePhotoManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
           case 1: // com.workdiary.app.PreferencesRepository 
-          return (T) new PreferencesRepository(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+          return (T) AppModule_ProvidePreferencesRepositoryFactory.providePreferencesRepository(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.provideDataStoreProvider.get());
 
-          case 2: // com.workdiary.app.utils.PDFManager 
-          return (T) new PDFManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+          case 2: // androidx.datastore.core.DataStore<androidx.datastore.preferences.core.Preferences> 
+          return (T) AppModule_ProvideDataStoreFactory.provideDataStore(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 3: // com.workdiary.app.utils.PDFManager 
+          return (T) AppModule_ProvidePDFManagerFactory.providePDFManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
           default: throw new AssertionError(id);
         }

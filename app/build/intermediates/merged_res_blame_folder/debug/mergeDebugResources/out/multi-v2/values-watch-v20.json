@@ -4,7 +4,7 @@
             "outputFile": "com.workdiary.app-mergeDebugResources-73:/values-watch-v20/values-watch-v20.xml",
             "map": [
                 {
-                    "source": "/Users/aiworker/.gradle/caches/9.0.0/transforms/f3bdf0ff59bc721e3d3b69da6b453a99/transformed/jetified-core-splashscreen-1.0.1/res/values-watch-v20/values-watch-v20.xml",
+                    "source": "/Users/aiworker/.gradle/caches/9.0.0/transforms/a2fa7e8a497c795def44d2e79788d8c1/transformed/jetified-core-splashscreen-1.0.1/res/values-watch-v20/values-watch-v20.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
                         "startColumns": "4,4,4,4,4,4,4,4",

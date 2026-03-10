@@ -1,11 +1,12 @@
 package com.workdiary.app
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import com.workdiary.app.data.storage.PrefsKeys
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -14,7 +15,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // DataStore singleton extension on Context — one instance per process.
-private val Context.dataStore by preferencesDataStore(name = "workdiary_prefs")
 
 /**
  * Repository that wraps Jetpack DataStore for all user preferences.
@@ -38,6 +38,7 @@ private val Context.dataStore by preferencesDataStore(name = "workdiary_prefs")
 @Singleton
 class PreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val dataStore: DataStore<Preferences>,
 ) {
 
     // ──────────────────────────────────────────────────────────────────────
@@ -56,19 +57,19 @@ class PreferencesRepository @Inject constructor(
     // ──────────────────────────────────────────────────────────────────────
 
     /** Dark-theme preference. Defaults to `true` (matching iOS default). */
-    val isDarkTheme: Flow<Boolean> = context.dataStore.data
+    val isDarkTheme: Flow<Boolean> = dataStore.data
         .map { prefs -> prefs[Keys.IS_DARK_THEME] ?: true }
 
     /** Whether the user has completed first-run onboarding. */
-    val hasCompletedSetup: Flow<Boolean> = context.dataStore.data
+    val hasCompletedSetup: Flow<Boolean> = dataStore.data
         .map { prefs -> prefs[Keys.HAS_COMPLETED_SETUP] ?: false }
 
     /** The active profile identifier ("User1" or "User2"). */
-    val activeProfile: Flow<String> = context.dataStore.data
+    val activeProfile: Flow<String> = dataStore.data
         .map { prefs -> prefs[Keys.ACTIVE_PROFILE] ?: "User1" }
 
     /** Whether the calendar week starts on Monday (true) or Sunday (false). */
-    val startOnMonday: Flow<Boolean> = context.dataStore.data
+    val startOnMonday: Flow<Boolean> = dataStore.data
         .map { prefs -> prefs[Keys.START_ON_MONDAY] ?: true }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -85,7 +86,7 @@ class PreferencesRepository @Inject constructor(
      *
      * @param profile Profile identifier, e.g. `"User1"`.
      */
-    fun isHoursModeForProfile(profile: String): Flow<Boolean> = context.dataStore.data
+    fun isHoursModeForProfile(profile: String): Flow<Boolean> = dataStore.data
         .map { prefs ->
             prefs[booleanPreferencesKey(PrefsKeys.isHours(profile))] ?: false
         }
@@ -97,7 +98,7 @@ class PreferencesRepository @Inject constructor(
      *
      * @param profile Profile identifier, e.g. `"User1"`.
      */
-    fun annualAllowanceForProfile(profile: String): Flow<Double> = context.dataStore.data
+    fun annualAllowanceForProfile(profile: String): Flow<Double> = dataStore.data
         .map { prefs ->
             prefs[doublePreferencesKey(PrefsKeys.annual(profile))] ?: 25.0
         }
@@ -109,7 +110,7 @@ class PreferencesRepository @Inject constructor(
      *
      * @param profile Profile identifier, e.g. `"User1"`.
      */
-    fun hourlyAllowanceForProfile(profile: String): Flow<Double> = context.dataStore.data
+    fun hourlyAllowanceForProfile(profile: String): Flow<Double> = dataStore.data
         .map { prefs ->
             prefs[doublePreferencesKey(PrefsKeys.hourly(profile))] ?: 187.5
         }
@@ -120,22 +121,22 @@ class PreferencesRepository @Inject constructor(
 
     /** Persists the dark-theme preference. */
     suspend fun setDarkTheme(enabled: Boolean) {
-        context.dataStore.edit { prefs -> prefs[Keys.IS_DARK_THEME] = enabled }
+        dataStore.edit { prefs -> prefs[Keys.IS_DARK_THEME] = enabled }
     }
 
     /** Marks onboarding as complete so it is not shown again on next launch. */
     suspend fun setSetupComplete() {
-        context.dataStore.edit { prefs -> prefs[Keys.HAS_COMPLETED_SETUP] = true }
+        dataStore.edit { prefs -> prefs[Keys.HAS_COMPLETED_SETUP] = true }
     }
 
     /** Switches the active profile. [profileId] must be `"User1"` or `"User2"`. */
     suspend fun setActiveProfile(profileId: String) {
-        context.dataStore.edit { prefs -> prefs[Keys.ACTIVE_PROFILE] = profileId }
+        dataStore.edit { prefs -> prefs[Keys.ACTIVE_PROFILE] = profileId }
     }
 
     /** Persists the calendar week-start preference. */
     suspend fun setStartOnMonday(value: Boolean) {
-        context.dataStore.edit { prefs -> prefs[Keys.START_ON_MONDAY] = value }
+        dataStore.edit { prefs -> prefs[Keys.START_ON_MONDAY] = value }
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -149,7 +150,7 @@ class PreferencesRepository @Inject constructor(
      * @param isHours  `true` = track in hours; `false` = track in days.
      */
     suspend fun setIsHoursMode(profile: String, isHours: Boolean) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[booleanPreferencesKey(PrefsKeys.isHours(profile))] = isHours
         }
     }
@@ -161,7 +162,7 @@ class PreferencesRepository @Inject constructor(
      * @param days    Annual allowance in days.
      */
     suspend fun setAnnualAllowance(profile: String, days: Double) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[doublePreferencesKey(PrefsKeys.annual(profile))] = days
         }
     }
@@ -173,7 +174,7 @@ class PreferencesRepository @Inject constructor(
      * @param hours   Annual allowance in hours.
      */
     suspend fun setHourlyAllowance(profile: String, hours: Double) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[doublePreferencesKey(PrefsKeys.hourly(profile))] = hours
         }
     }

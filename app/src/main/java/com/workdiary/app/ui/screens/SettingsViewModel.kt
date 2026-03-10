@@ -1,5 +1,7 @@
 package com.workdiary.app.ui.screens
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -11,7 +13,6 @@ import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.workdiary.app.PreferencesRepository
@@ -38,7 +39,6 @@ import javax.inject.Inject
 //  single DataStore instance per (context, name) pair regardless of how many
 //  Kotlin extension properties point to it.
 // ─────────────────────────────────────────────────────────────────────────────
-private val Context.settingsStore by preferencesDataStore(name = "workdiary_prefs")
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  DataStore keys used exclusively by SettingsViewModel
@@ -143,9 +143,8 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val app: Application,
     private val repo: PreferencesRepository,
+    private val store: DataStore<Preferences>,
 ) : AndroidViewModel(app) {
-
-    private val store = app.settingsStore
 
     // ──────────────────────────────────────────────────────────────────────
     //  Mutable internal state

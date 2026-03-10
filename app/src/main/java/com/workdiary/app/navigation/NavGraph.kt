@@ -203,8 +203,7 @@ fun MainShell(outerNavController: NavHostController) {
             exitTransition   = { fadeOut(animationSpec = tween(200)) },
         ) {
             composable(Screen.Calendar.route) {
-                // TODO Phase 4: Replace with CalendarScreen(navController = outerNavController)
-                PlaceholderScreen(label = "Calendar")
+                com.workdiary.app.ui.screens.CalendarScreen()
             }
 
             composable(Screen.BookedLeave.route) {

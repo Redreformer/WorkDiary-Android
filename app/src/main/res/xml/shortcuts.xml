@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    WorkDiary — Static App Shortcuts
+    res/xml/shortcuts.xml
+
+    Declared in AndroidManifest.xml on the <activity> block:
+      <meta-data
+          android:name="android.app.shortcuts"
+          android:resource="@xml/shortcuts" />
+
+    iOS equivalent: DutyIntents.swift (Siri AppIntents)
+      - GetDutyIntent      → "today_duty"   shortcut
+      - GetTomorrowDutyIntent → "tomorrow_duty" shortcut
+
+    These shortcuts appear when the user long-presses the WorkDiary launcher icon.
+    They launch MainActivity with intent extras so the app navigates directly to the
+    Calendar screen and pre-selects the correct day.
+
+    Intent extras injected:
+      navigate_to = "calendar"         → open the Calendar tab
+      extra_duty_day = "today"         → highlight today's entry
+      extra_duty_day = "tomorrow"      → highlight tomorrow's entry
+
+    Note: shortcutShortLabel max 10 chars; shortcutLongLabel max 25 chars (OS limit).
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Shortcut 1 — Today's Duty
+        iOS phrase: "What's my duty today?"
+        Launches CalendarScreen and highlights today's shift entry.
+    -->
+    <shortcut
+        android:shortcutId="shortcut_today_duty"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_calendar"
+        android:shortcutShortLabel="@string/shortcut_today_short"
+        android:shortcutLongLabel="@string/shortcut_today_long">
+
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.workdiary.app"
+            android:targetClass="com.workdiary.app.MainActivity">
+            <!-- Navigate to the Calendar screen -->
+            <extra android:name="navigate_to"   android:value="calendar" />
+            <!-- Tell CalendarScreen to select today -->
+            <extra android:name="extra_duty_day" android:value="today" />
+        </intent>
+
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <!--
+        Shortcut 2 — Tomorrow's Duty
+        iOS phrase: "What's my duty tomorrow?"
+        Launches CalendarScreen and highlights tomorrow's shift entry.
+    -->
+    <shortcut
+        android:shortcutId="shortcut_tomorrow_duty"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_calendar"
+        android:shortcutShortLabel="@string/shortcut_tomorrow_short"
+        android:shortcutLongLabel="@string/shortcut_tomorrow_long">
+
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.workdiary.app"
+            android:targetClass="com.workdiary.app.MainActivity">
+            <!-- Navigate to the Calendar screen -->
+            <extra android:name="navigate_to"    android:value="calendar" />
+            <!-- Tell CalendarScreen to select tomorrow -->
+            <extra android:name="extra_duty_day" android:value="tomorrow" />
+        </intent>
+
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+</shortcuts>

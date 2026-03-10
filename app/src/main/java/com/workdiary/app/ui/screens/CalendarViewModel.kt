@@ -10,7 +10,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.workdiary.app.PreferencesRepository
 import com.workdiary.app.data.models.Holiday
+import com.workdiary.app.data.models.ZoomItem
 import com.workdiary.app.data.storage.PrefsKeys
+import com.workdiary.app.utils.DutyScanner
+import com.workdiary.app.utils.PDFManager
+import com.workdiary.app.utils.PhotoManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -159,6 +163,9 @@ data class PatternDraft(
  * @property showPatternGenerator Whether the pattern-generator sheet is visible.
  * @property patternDraft         Current state of the pattern-generator form.
  * @property patternSyncing       True while the pattern generator is computing.
+ * @property selectedZoomItem     Non-null when the full-screen photo viewer is open.
+ * @property photoRefreshTick     Incremented each time a photo is saved or deleted,
+ *                                triggering recomposition of photo slots in [DayView].
  */
 data class CalendarUiState(
     val selectedDate: LocalDate          = LocalDate.now(),
@@ -171,6 +178,8 @@ data class CalendarUiState(
     val showPatternGenerator: Boolean    = false,
     val patternDraft: PatternDraft       = PatternDraft(),
     val patternSyncing: Boolean          = false,
+    val selectedZoomItem: ZoomItem?      = null,
+    val photoRefreshTick: Int            = 0,
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -194,18 +203,22 @@ data class CalendarUiState(
 class CalendarViewModel @Inject constructor(
     private val app: Application,
     private val repo: PreferencesRepository,
+    private val photoManager: PhotoManager,
+    private val pdfManager: PDFManager,
 ) : AndroidViewModel(app) {
 
     private val store = app.calendarStore
 
     // ── Local mutable state ───────────────────────────────────────────────
 
-    private val _selectedDate        = MutableStateFlow(LocalDate.now())
-    private val _viewMode            = MutableStateFlow(CalendarViewMode.MONTH)
-    private val _showNoteEditor      = MutableStateFlow(false)
+    private val _selectedDate         = MutableStateFlow(LocalDate.now())
+    private val _viewMode             = MutableStateFlow(CalendarViewMode.MONTH)
+    private val _showNoteEditor       = MutableStateFlow(false)
     private val _showPatternGenerator = MutableStateFlow(false)
-    private val _patternDraft        = MutableStateFlow(PatternDraft())
-    private val _patternSyncing      = MutableStateFlow(false)
+    private val _patternDraft         = MutableStateFlow(PatternDraft())
+    private val _patternSyncing       = MutableStateFlow(false)
+    private val _selectedZoomItem     = MutableStateFlow<ZoomItem?>(null)
+    private val _photoRefreshTick     = MutableStateFlow(0)
 
     // ── Profile-scoped DataStore flows ────────────────────────────────────
 
@@ -235,10 +248,20 @@ class CalendarViewModel @Inject constructor(
         combine(startOnMondayFlow, repo.activeProfile) { startOnMonday, profile ->
             startOnMonday to profile
         },
-        combine(_showNoteEditor, _showPatternGenerator, _patternDraft, _patternSyncing) { a, b, c, d ->
-            Quadruple(a, b, c, d)
+        combine(_showNoteEditor, _showPatternGenerator, _patternDraft, _patternSyncing,
+                _selectedZoomItem, _photoRefreshTick) { arr ->
+            // arr: [Boolean, Boolean, PatternDraft, Boolean, ZoomItem?, Int]
+            @Suppress("UNCHECKED_CAST")
+            Sextet(
+                arr[0] as Boolean,
+                arr[1] as Boolean,
+                arr[2] as PatternDraft,
+                arr[3] as Boolean,
+                arr[4] as ZoomItem?,
+                arr[5] as Int,
+            )
         },
-    ) { selectedDate, viewMode, notesJson, holidays, (startOnMonday, profile), quad ->
+    ) { selectedDate, viewMode, notesJson, holidays, (startOnMonday, profile), sex ->
         CalendarUiState(
             selectedDate          = selectedDate,
             viewMode              = viewMode,
@@ -246,10 +269,12 @@ class CalendarViewModel @Inject constructor(
             holidays              = holidays,
             startOnMonday         = startOnMonday,
             activeProfile         = profile,
-            showNoteEditor        = quad.first,
-            showPatternGenerator  = quad.second,
-            patternDraft          = quad.third,
-            patternSyncing        = quad.fourth,
+            showNoteEditor        = sex.first,
+            showPatternGenerator  = sex.second,
+            patternDraft          = sex.third,
+            patternSyncing        = sex.fourth,
+            selectedZoomItem      = sex.fifth,
+            photoRefreshTick      = sex.sixth,
         )
     }.stateIn(
         scope        = viewModelScope,
@@ -518,21 +543,170 @@ class CalendarViewModel @Inject constructor(
      * Mirrors `CalendarView.getImagePath(for:index:)` in CalendarView.swift.
      * File name pattern: `photo_{profile}_{epochSeconds}_{index}.jpg`
      *
-     * Used by Phase 10 (OCR / photo capture) to read and write photo files.
-     *
      * @param date    Calendar day the photo belongs to.
      * @param index   Slot index: 0 = roster scan (triggers OCR), 1 = PDF render, 2 = manual.
      */
     fun getPhotoFile(date: LocalDate, index: Int): File {
-        val epochSeconds = date.atStartOfDay(java.time.ZoneOffset.UTC).toEpochSecond()
         val profile = uiState.value.activeProfile
-        val fileName = "photo_${profile}_${epochSeconds}_$index.jpg"
-        return File(app.filesDir, fileName)
+        return photoManager.getPhotoFile(profile, date, index)
+    }
+
+    // ── Photo zoom viewer ─────────────────────────────────────────────────
+
+    /**
+     * Opens the full-screen zoom viewer for the given [item].
+     *
+     * Mirrors `selectedZoomItem = ZoomItem(...)` in CalendarView.swift.
+     */
+    fun openZoomView(item: ZoomItem) {
+        _selectedZoomItem.value = item
+    }
+
+    /** Closes the full-screen zoom viewer. */
+    fun closeZoomView() {
+        _selectedZoomItem.value = null
+    }
+
+    // ── Photo save + OCR pipeline ─────────────────────────────────────────
+
+    /**
+     * Saves [bitmap] to [date]/[index], then (if index == 0) triggers OCR and
+     * auto-renders the duty PDF page to slot 1.
+     *
+     * Mirrors `AddPhotoButton.saveToDisk(_:)` in CalendarView.swift, including
+     * the `DutyScanner.scanImage` → `PDFManager.renderPDFPage` chain.
+     *
+     * @param date    Calendar day for the photo.
+     * @param index   Slot index (0 triggers OCR).
+     * @param bitmap  The captured/picked photo bitmap.
+     */
+    fun savePhotoAndScan(date: LocalDate, index: Int, bitmap: android.graphics.Bitmap) =
+        viewModelScope.launch {
+            val profile = repo.activeProfile.first()
+            photoManager.saveBitmap(profile, date, index, bitmap)
+
+            if (index == 0) {
+                // Run OCR (mirrors DutyScanner.scanImage in iOS)
+                val scanResult = DutyScanner.scanImage(bitmap)
+
+                // Append scanned text to notes
+                if (scanResult.scannedText.isNotBlank()) {
+                    appendScannedTextToNotes(date, scanResult.scannedText)
+                }
+
+                // Auto-render the matching PDF page to slot 1
+                if (scanResult.dutyNumber != null) {
+                    val pdfBitmap = pdfManager.renderPDFPage(scanResult.dutyNumber, date)
+                    if (pdfBitmap != null) {
+                        photoManager.saveBitmap(profile, date, 1, pdfBitmap)
+                    }
+                }
+            }
+
+            _photoRefreshTick.value++
+        }
+
+    /**
+     * Saves raw JPEG [bytes] to [date]/[index] and triggers the OCR pipeline if needed.
+     *
+     * Used by gallery/file-picker handlers that supply raw bytes directly.
+     */
+    fun savePhotoBytesAndScan(date: LocalDate, index: Int, bytes: ByteArray) =
+        viewModelScope.launch {
+            val profile = repo.activeProfile.first()
+            photoManager.savePhotoBytes(profile, date, index, bytes)
+
+            if (index == 0) {
+                // Decode for OCR
+                val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                if (bitmap != null) {
+                    val scanResult = DutyScanner.scanImage(bitmap)
+                    if (scanResult.scannedText.isNotBlank()) {
+                        appendScannedTextToNotes(date, scanResult.scannedText)
+                    }
+                    if (scanResult.dutyNumber != null) {
+                        val pdfBitmap = pdfManager.renderPDFPage(scanResult.dutyNumber, date)
+                        if (pdfBitmap != null) {
+                            val profile2 = repo.activeProfile.first()
+                            photoManager.saveBitmap(profile2, date, 1, pdfBitmap)
+                        }
+                    }
+                }
+            }
+            _photoRefreshTick.value++
+        }
+
+    /**
+     * Saves the PDF-rendered duty page for [dutyNumber] directly to slot 2 (index 2).
+     *
+     * Mirrors the "Render to Slot 3" action in `AddPhotoButton.showingJumpAlert` in iOS.
+     */
+    fun renderDutyToSlot3(dutyNumber: String, date: LocalDate) = viewModelScope.launch {
+        val pdfBitmap = pdfManager.renderPDFPage(dutyNumber, date) ?: return@launch
+        val profile   = repo.activeProfile.first()
+        photoManager.saveBitmap(profile, date, 2, pdfBitmap)
+        _photoRefreshTick.value++
+    }
+
+    // ── Photo delete ──────────────────────────────────────────────────────
+
+    /**
+     * Deletes the photo for [date]/[index] and, if slot 0 is deleted, removes the
+     * OCR-sourced duty/sign-on/sign-off lines from the day's note.
+     *
+     * Mirrors `CalendarView.deleteImageForDate(date:index:)` in CalendarView.swift.
+     */
+    fun deletePhoto(date: LocalDate, index: Int) = viewModelScope.launch {
+        val profile = repo.activeProfile.first()
+        photoManager.deletePhoto(profile, date, index)
+
+        // If slot 0 deleted, wipe OCR lines from notes (mirrors iOS behaviour)
+        if (index == 0) {
+            deleteDutyData(date)
+        }
+
+        _selectedZoomItem.value = null
+        _photoRefreshTick.value++
+    }
+
+    // ── Internal: append scanned text to day note ─────────────────────────
+
+    /**
+     * Appends OCR [scannedText] to the day note for [date], replacing any previous
+     * Duty/Sign-On/Sign-Off lines.
+     *
+     * Mirrors `AddPhotoButton.appendScannedTextToNotes(_:)` in CalendarView.swift.
+     */
+    private suspend fun appendScannedTextToNotes(date: LocalDate, scannedText: String) {
+        val profile = repo.activeProfile.first()
+        val key     = stringPreferencesKey(PrefsKeys.notes(profile))
+        val json    = store.data.first()[key] ?: ""
+        val notes   = decodeNotesMap(json)
+        val noteKey = date.toNoteKey()
+
+        val existing = notes[noteKey] ?: ""
+        val filtered = existing.lines()
+            .filterNot { isScannerLine(it) }
+            .joinToString("\n")
+            .trim()
+
+        val updated = if (filtered.isEmpty()) scannedText
+                      else "$scannedText\n$filtered"
+        notes[noteKey] = updated
+
+        store.edit { it[key] = encodeNotesMap(notes) }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Utility: 4-element tuple (Kotlin has Pair and Triple but not Quadruple)
+//  Utility: 4-element tuple (Kotlin has Pair and Triple but not larger)
 // ─────────────────────────────────────────────────────────────────────────────
 
 private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
+private data class Sextet<A, B, C, D, E, F>(
+    val first: A, val second: B, val third: C,
+    val fourth: D, val fifth: E, val sixth: F,
+)
+
+

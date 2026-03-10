@@ -1,6 +1,13 @@
 package com.workdiary.app.ui.screens
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -29,18 +40,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.workdiary.app.data.models.Holiday
+import com.workdiary.app.data.models.ZoomItem
 import com.workdiary.app.ui.theme.WorkDiaryTheme
+import com.workdiary.app.utils.PhotoManager
 import com.workdiary.ui.components.CalendarDayCell
 import com.workdiary.ui.components.WeekRowCell
 import com.workdiary.ui.components.getCalendarDutyCellColor
 import com.workdiary.ui.components.SHIFT_KEYWORDS
+import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
+import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import kotlin.math.abs
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -96,7 +115,37 @@ private val PAGE_TWO_SHIFTS = listOf(
 fun CalendarScreen(
     viewModel: CalendarViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state   by viewModel.uiState.collectAsState()
+    val context  = LocalContext.current
+    val scope    = rememberCoroutineScope()
+
+    // ── Full-screen zoom viewer (mirrors fullScreenCover in iOS) ───────────
+    state.selectedZoomItem?.let { zoomItem ->
+        val photoManager = remember {
+            // Resolve PhotoManager from Hilt's EntryPoint since we're in a composable scope
+            com.workdiary.app.utils.PhotoManagerProvider.get(context)
+        }
+        var allBitmaps by remember(zoomItem, state.photoRefreshTick) {
+            mutableStateOf(listOf<Bitmap?>(null, null, null))
+        }
+        LaunchedEffect(zoomItem, state.photoRefreshTick) {
+            val date = zoomItem.date.toInstant()
+                .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+            allBitmaps = (0..2).map { i ->
+                photoManager.loadPhoto(state.activeProfile, date, i)
+            }
+        }
+        ZoomImageScreen(
+            item       = zoomItem,
+            allBitmaps = allBitmaps,
+            onDelete   = { slotIndex ->
+                val date = zoomItem.date.toInstant()
+                    .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                viewModel.deletePhoto(date, slotIndex)
+            },
+            onDismiss  = { viewModel.closeZoomView() },
+        )
+    }
 
     // ── Sheets ─────────────────────────────────────────────────────────────
     if (state.showNoteEditor) {
@@ -538,8 +587,19 @@ private fun DayView(
         val dayOffset = page - initialPage
         val date      = today.plusDays(dayOffset.toLong())
         DayPageContent(
-            date          = date,
-            activeProfile = state.activeProfile,
+            date             = date,
+            activeProfile    = state.activeProfile,
+            photoRefreshTick = state.photoRefreshTick,
+            onPhotoTapped    = { bitmap, index ->
+                val legacyDate = Date.from(
+                    date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()
+                )
+                onDateSelect(date)
+                viewModel.openZoomView(ZoomItem(id = UUID.randomUUID(), image = bitmap, date = legacyDate, index = index))
+            },
+            onPhotoSaved     = { index, bitmap -> viewModel.savePhotoAndScan(date, index, bitmap) },
+            onRawBytesSaved  = { index, bytes  -> viewModel.savePhotoBytesAndScan(date, index, bytes) },
+            onDutySearch     = { duty           -> viewModel.renderDutyToSlot3(duty, date) },
         )
     }
 }
@@ -548,9 +608,33 @@ private fun DayView(
 private fun DayPageContent(
     date: LocalDate,
     activeProfile: String,
+    photoRefreshTick: Int,
+    onPhotoTapped: (Bitmap, Int) -> Unit,
+    onPhotoSaved: (Int, Bitmap) -> Unit,
+    onRawBytesSaved: (Int, ByteArray) -> Unit,
+    onDutySearch: (String) -> Unit,
 ) {
+    val context = LocalContext.current
+
+    // Load all three bitmaps from disk (refreshed when photoRefreshTick changes)
+    val bitmaps = remember(date, activeProfile, photoRefreshTick) {
+        mutableStateListOf<Bitmap?>(null, null, null)
+    }
+    LaunchedEffect(date, activeProfile, photoRefreshTick) {
+        val epochSeconds = date.atStartOfDay(java.time.ZoneOffset.UTC).toEpochSecond()
+        (0 until 3).forEach { i ->
+            val file = java.io.File(
+                context.filesDir,
+                "photo_${activeProfile}_${epochSeconds}_$i.jpg",
+            )
+            bitmaps[i] = if (file.exists())
+                withContext(Dispatchers.IO) { BitmapFactory.decodeFile(file.absolutePath) }
+            else null
+        }
+    }
+
     Column(
-        modifier          = Modifier.fillMaxSize().padding(top = 8.dp),
+        modifier            = Modifier.fillMaxSize().padding(top = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Day header
@@ -574,14 +658,247 @@ private fun DayPageContent(
             modifier = Modifier.padding(horizontal = 16.dp),
         ) {
             for (index in 0 until 3) {
-                // TODO Phase 10: check filesDir for photo_${activeProfile}_${epochSeconds}_${index}.jpg
-                //               If exists → render thumbnail with tap-to-zoom
-                //               If missing → show AddPhotoButton (camera / gallery / files / PDF search)
-                PhotoPlaceholder(
-                    slotIndex = index,
-                    modifier  = Modifier
-                        .weight(1f)
-                        .aspectRatio(0.75f),
+                val bitmap = bitmaps.getOrNull(index)
+                if (bitmap != null) {
+                    // Photo exists → show thumbnail with tap-to-zoom
+                    PhotoThumbnail(
+                        bitmap   = bitmap,
+                        index    = index,
+                        onTap    = { onPhotoTapped(bitmap, index) },
+                        modifier = Modifier.weight(1f).aspectRatio(0.75f),
+                    )
+                } else {
+                    // Empty slot → show Add button
+                    AddPhotoButton(
+                        slotIndex       = index,
+                        onPhotoSaved    = { bmp -> onPhotoSaved(index, bmp) },
+                        onRawBytesSaved = { bytes -> onRawBytesSaved(index, bytes) },
+                        onDutySearch    = onDutySearch,
+                        modifier        = Modifier.weight(1f).aspectRatio(0.75f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Photo thumbnail (existing photo)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun PhotoThumbnail(
+    bitmap: Bitmap,
+    index: Int,
+    onTap: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onTap),
+    ) {
+        Image(
+            bitmap             = bitmap.asImageBitmap(),
+            contentDescription = "Photo slot ${index + 1}",
+            contentScale       = ContentScale.Crop,
+            modifier           = Modifier.fillMaxSize(),
+        )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Add-photo button (empty slot)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Mirrors `AddPhotoButton` in CalendarView.swift.
+ *
+ * Shows a bottom-sheet action menu with four options:
+ * - **Take Photo** — camera capture via `TakePicture` contract
+ * - **Choose from Library** — photo picker via `PickVisualMedia`
+ * - **Choose from Files** — document picker via `OpenDocument`
+ * - **Search Duty Board** — duty-number text input → PDF render to slot 3
+ *
+ * When the captured/picked image lands on slot 0 it is automatically passed to
+ * the [onPhotoSaved] callback, which triggers OCR + PDF auto-render in the ViewModel.
+ */
+@Composable
+private fun AddPhotoButton(
+    slotIndex: Int,
+    onPhotoSaved: (Bitmap) -> Unit,
+    onRawBytesSaved: (ByteArray) -> Unit,
+    onDutySearch: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val scope   = rememberCoroutineScope()
+
+    var showActionSheet by remember { mutableStateOf(false) }
+    var showDutyDialog  by remember { mutableStateOf(false) }
+    var dutyInput       by remember { mutableStateOf("") }
+    var isSearching     by remember { mutableStateOf(false) }
+
+    // ── Camera temp file + launcher ────────────────────────────────────────
+    val cameraTempFile = remember {
+        val file = java.io.File(context.cacheDir, "camera_slot_${slotIndex}_temp.jpg")
+        if (!file.exists()) file.createNewFile()
+        file
+    }
+    val cameraTempUri = remember(cameraTempFile) {
+        androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            cameraTempFile,
+        )
+    }
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            scope.launch(Dispatchers.IO) {
+                val bmp = BitmapFactory.decodeFile(cameraTempFile.absolutePath)
+                if (bmp != null) withContext(Dispatchers.Main) { onPhotoSaved(bmp) }
+            }
+        }
+    }
+
+    // ── Gallery launcher ───────────────────────────────────────────────────
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            scope.launch(Dispatchers.IO) {
+                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                if (bytes != null) withContext(Dispatchers.Main) { onRawBytesSaved(bytes) }
+            }
+        }
+    }
+
+    // ── File picker launcher ───────────────────────────────────────────────
+    val fileLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            scope.launch(Dispatchers.IO) {
+                val bytes = try {
+                    context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                } catch (_: Exception) { null }
+                if (bytes != null) withContext(Dispatchers.Main) { onRawBytesSaved(bytes) }
+            }
+        }
+    }
+
+    // ── Duty search dialog ─────────────────────────────────────────────────
+    if (showDutyDialog) {
+        AlertDialog(
+            onDismissRequest = { showDutyDialog = false; dutyInput = "" },
+            title = { Text("Quick Jump to Duty") },
+            text  = {
+                Column {
+                    Text(
+                        "Enter duty number to render from the Duty Board PDF to Slot 3.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value         = dutyInput,
+                        onValueChange = { dutyInput = it.filter { c -> c.isDigit() } },
+                        label         = { Text("Duty Number (e.g. 1096)") },
+                        singleLine    = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Number,
+                        ),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (dutyInput.isNotBlank()) onDutySearch(dutyInput)
+                    showDutyDialog = false
+                    dutyInput = ""
+                }) {
+                    Text("Render to Slot 3")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDutyDialog = false; dutyInput = "" }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
+    // ── Action sheet ───────────────────────────────────────────────────────
+    if (showActionSheet) {
+        ModalBottomSheet(onDismissRequest = { showActionSheet = false }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(bottom = 16.dp),
+            ) {
+                Text(
+                    text     = "Add Photo — Slot ${slotIndex + 1}",
+                    style    = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+                HorizontalDivider()
+                ActionSheetItem("📷  Take Photo") {
+                    showActionSheet = false
+                    cameraLauncher.launch(cameraTempUri)
+                }
+                ActionSheetItem("🖼  Choose from Library") {
+                    showActionSheet = false
+                    galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                }
+                ActionSheetItem("📄  Choose from Files") {
+                    showActionSheet = false
+                    fileLauncher.launch(arrayOf("image/*"))
+                }
+                ActionSheetItem("🔍  Search Duty Board") {
+                    showActionSheet = false
+                    showDutyDialog  = true
+                }
+                ActionSheetItem("Cancel", isCancel = true) {
+                    showActionSheet = false
+                }
+            }
+        }
+    }
+
+    // ── Button face ────────────────────────────────────────────────────────
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(enabled = !isSearching) { showActionSheet = true },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isSearching) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text  = "Searching…",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = MaterialTheme.colorScheme.primary,
+                    ),
+                )
+            }
+        } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector        = Icons.Filled.Add,
+                    contentDescription = "Add photo slot ${slotIndex + 1}",
+                    tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier           = Modifier.size(28.dp),
+                )
+                Text(
+                    text  = "Add ${slotIndex + 1}",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
                 )
             }
         }
@@ -589,31 +906,24 @@ private fun DayPageContent(
 }
 
 @Composable
-private fun PhotoPlaceholder(
-    slotIndex: Int,
-    modifier: Modifier = Modifier,
+private fun ActionSheetItem(
+    label: String,
+    isCancel: Boolean = false,
+    onClick: () -> Unit,
 ) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.Center,
+    TextButton(
+        onClick  = onClick,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text  = "＋",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-            )
-            Text(
-                text  = "Add ${slotIndex + 1}",
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-            )
-            // TODO Phase 10: replace with tappable AddPhotoButton (camera, gallery, files, PDF search)
-        }
+        Text(
+            text  = label,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color      = if (isCancel) MaterialTheme.colorScheme.error
+                             else MaterialTheme.colorScheme.onSurface,
+                fontWeight = if (isCancel) FontWeight.Bold else FontWeight.Normal,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 

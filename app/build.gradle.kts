@@ -135,6 +135,12 @@ dependencies {
     // Note: android-pdf-viewer wraps pdfium-android and provides a ready-to-use View.
     implementation("com.github.barteksc:android-pdf-viewer:3.2.0-beta.1")
 
+    // ── ML Kit Text Recognition (OCR) ─────────────────────────────────────────
+    // Android equivalent of Apple Vision VNRecognizeTextRequest.
+    // Used by DutyScanner to extract duty number + sign-on/off times from photos.
+    // Bundled model variant — no network access required for inference.
+    implementation("com.google.mlkit:text-recognition:16.0.0")
+
     // ── DataStore (SharedPreferences replacement) ─────────────────────────────
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 

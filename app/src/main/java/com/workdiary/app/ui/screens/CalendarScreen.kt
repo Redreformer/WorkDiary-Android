@@ -39,6 +39,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.workdiary.app.data.models.Holiday
 import com.workdiary.app.data.models.ZoomItem
 import com.workdiary.app.ui.theme.WorkDiaryTheme
@@ -229,6 +230,7 @@ fun CalendarScreen(
 //  Header
 // ─────────────────────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CalendarHeader(
     state: CalendarUiState,
@@ -553,6 +555,7 @@ private fun DayView(
     onDateSelect: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val viewModel: CalendarViewModel = hiltViewModel()
     val today     = LocalDate.now()
     val pageCount = 2001   // -1000 to +1000
     val initialPage = 1000
@@ -724,6 +727,7 @@ private fun PhotoThumbnail(
  * the [onPhotoSaved] callback, which triggers OCR + PDF auto-render in the ViewModel.
  */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun AddPhotoButton(
     slotIndex: Int,
     onPhotoSaved: (Bitmap) -> Unit,

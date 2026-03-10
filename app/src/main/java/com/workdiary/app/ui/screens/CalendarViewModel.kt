@@ -234,6 +234,9 @@ class CalendarViewModel @Inject constructor(
         Holiday.decode(json)
     }
 
+    private val notesAndHolidaysFlow: Flow<Pair<String, List<Holiday>>> =
+        combine(notesJsonFlow, holidaysFlow) { notes, holidays -> notes to holidays }
+
     private val startOnMondayFlow: Flow<Boolean> = store.data.map {
         it[booleanPreferencesKey(PrefsKeys.START_ON_MONDAY)] ?: true
     }
@@ -243,8 +246,7 @@ class CalendarViewModel @Inject constructor(
     val uiState: StateFlow<CalendarUiState> = combine(
         _selectedDate,
         _viewMode,
-        notesJsonFlow,
-        holidaysFlow,
+        notesAndHolidaysFlow,
         combine(startOnMondayFlow, repo.activeProfile) { startOnMonday, profile ->
             startOnMonday to profile
         },
@@ -261,14 +263,14 @@ class CalendarViewModel @Inject constructor(
                 arr[5] as Int,
             )
         },
-    ) { selectedDate, viewMode, notesJson, holidays, (startOnMonday, profile), sex ->
+    ) { selectedDate, viewMode, notesAndHolidays, startPair, sex ->
         CalendarUiState(
             selectedDate          = selectedDate,
             viewMode              = viewMode,
-            notesJson             = notesJson,
-            holidays              = holidays,
-            startOnMonday         = startOnMonday,
-            activeProfile         = profile,
+            notesJson             = notesAndHolidays.first,
+            holidays              = notesAndHolidays.second,
+            startOnMonday         = startPair.first,
+            activeProfile         = startPair.second,
             showNoteEditor        = sex.first,
             showPatternGenerator  = sex.second,
             patternDraft          = sex.third,
@@ -461,6 +463,7 @@ class CalendarViewModel @Inject constructor(
      *
      * Mirrors `RestDayPatternView.pullAndApply()` in CalendarView.swift.
      */
+    @OptIn(ExperimentalStdlibApi::class)
     fun applyPattern() = viewModelScope.launch {
         _patternSyncing.value = true
         val draft   = _patternDraft.value
@@ -489,7 +492,8 @@ class CalendarViewModel @Inject constructor(
         var current = draft.anchorDate
         while (!current.isAfter(endDate)) {
             val diff  = java.time.temporal.ChronoUnit.DAYS.between(draft.anchorDate, current).toInt()
-            val shift = patternMap[diff % draft.cycleLength] ?: run { current = current.plusDays(1); continue }
+            val shift = patternMap[diff % draft.cycleLength]
+            if (shift == null) { current = current.plusDays(1); continue }
             val noteKey = current.toNoteKey()
             val existing = notes[noteKey] ?: ""
             if (!existing.contains(shift)) {
@@ -510,6 +514,7 @@ class CalendarViewModel @Inject constructor(
      *
      * Mirrors `RestDayPatternView.resetGeneratedPattern()` in CalendarView.swift.
      */
+    @OptIn(ExperimentalStdlibApi::class)
     fun resetPattern() = viewModelScope.launch {
         val draft   = _patternDraft.value
         val profile = repo.activeProfile.first()
@@ -522,7 +527,8 @@ class CalendarViewModel @Inject constructor(
         var current = draft.anchorDate
         while (!current.isAfter(endDate)) {
             val noteKey  = current.toNoteKey()
-            val existing = notes[noteKey] ?: run { current = current.plusDays(1); continue }
+            val existing = notes[noteKey]
+            if (existing == null) { current = current.plusDays(1); continue }
             val cleaned  = existing.lines()
                 .filterNot { line -> resetKeywords.any { line.trim().contains(it) } }
                 .joinToString("\n")

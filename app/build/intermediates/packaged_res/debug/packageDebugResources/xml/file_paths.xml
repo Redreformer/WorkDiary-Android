@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FileProvider path configuration for Work Diary.
+
+    Paths declared here are the only directories FileProvider will expose via content:// URIs.
+
+    ─────────────────────────────────────────────────────────────────────────────
+    Path types:
+      files-path  → Context.getFilesDir()         — duty board PDFs, day photos
+      cache-path  → Context.getCacheDir()          — temporary export PDFs
+    ─────────────────────────────────────────────────────────────────────────────
+
+    The iOS app stores all files in FileManager.default.urls(.documentDirectory).
+    On Android we use filesDir (private, not user-visible) and share via FileProvider URIs,
+    which is the recommended approach for scoped storage on API 29+.
+-->
+<paths>
+    <!-- All files inside filesDir — covers duty PDFs (MF.pdf, SAT.pdf, SUN.pdf)
+         and day photos (photo_{profile}_{timestamp}_{index}.jpg). -->
+    <files-path
+        name="app_files"
+        path="." />
+
+    <!-- Temporary directory for generated leave-summary PDFs before sharing. -->
+    <cache-path
+        name="app_cache"
+        path="." />
+</paths>

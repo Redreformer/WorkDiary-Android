@@ -6,8 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.provider.CalendarContract
 import androidx.core.content.ContextCompat
-import com.workdiary.app.data.model.Holiday
-import com.workdiary.app.data.model.LeaveType
+import com.workdiary.app.data.models.Holiday
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDate
 import java.time.ZoneId
@@ -64,7 +63,7 @@ class CalendarManager @Inject constructor(
      * [[holiday].startDate .. [endDate]] (inclusive), identical to the iOS implementation
      * that loops through each day.
      *
-     * The event title is: `"<emoji> <holiday.title>"`, e.g. `"🌴 Annual Leave"`.
+     * The event title is: `"<emoji> <holiday.name>"`, e.g. `"🌴 Annual Leave"`.
      *
      * @param holiday  The [Holiday] whose [Holiday.startDate] defines the first day.
      * @param endDate  Last day of the leave block (inclusive).
@@ -76,15 +75,15 @@ class CalendarManager @Inject constructor(
 
         val calendarId = primaryCalendarId() ?: return emptyList()
         val emoji      = emojiForType(holiday.type)
-        val title      = "$emoji ${holiday.title}"
+        val title      = "$emoji ${holiday.name}"
         val results    = mutableListOf<Long?>()
 
-        var current = holiday.startDate
+        var current = holiday.date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate()
         while (!current.isAfter(endDate)) {
             val eventId = insertAllDayEvent(
                 calendarId  = calendarId,
                 title       = title,
-                description = holiday.notes.orEmpty(),
+                description = holiday.name,
                 date        = current,
             )
             results += eventId
@@ -101,16 +100,17 @@ class CalendarManager @Inject constructor(
      * @param type The leave category.
      * @return Emoji character string, e.g. `"🌴"` for [LeaveType.Annual].
      */
-    fun emojiForType(type: LeaveType): String = when (type) {
-        LeaveType.ANNUAL      -> "🌴"
-        LeaveType.ALLOCATED   -> "📅"
-        LeaveType.PERSONAL    -> "🏖️"
-        LeaveType.SICK        -> "🤒"
-        LeaveType.MATERNITY   -> "👶"
-        LeaveType.PATERNITY   -> "👨‍👧"
-        LeaveType.UNPAID      -> "💸"
-        LeaveType.BANK_HOLIDAY -> "🏦"
-        LeaveType.OTHER       -> "📝"
+    fun emojiForType(type: String): String = when (type) {
+        "Annual Leave"  -> "🌴"
+        "Allocated"     -> "📅"
+        "Personal"      -> "🏖️"
+        "Sick Leave"    -> "🤒"
+        "Maternity"     -> "👶"
+        "Paternity"     -> "👨‍👧"
+        "Unpaid"        -> "💸"
+        "Bank Holiday"  -> "🏦"
+        "Lieu Day"      -> "🔄"
+        else            -> "📝"
     }
 
     // ──────────────────────────────────────────────────────────────────────

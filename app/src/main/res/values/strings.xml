@@ -14,4 +14,10 @@
     <string name="cd_nav_holidays">Open booked holidays</string>
     <string name="cd_nav_balance">Open leave balance dashboard</string>
     <string name="cd_nav_settings">Open settings</string>
+
+    <!-- App shortcuts -->
+    <string name="shortcut_today_short">Today\'s Duty</string>
+    <string name="shortcut_today_long">Check Today\'s Duty</string>
+    <string name="shortcut_tomorrow_short">Tomorrow\'s Duty</string>
+    <string name="shortcut_tomorrow_long">Check Tomorrow\'s Duty</string>
 </resources>

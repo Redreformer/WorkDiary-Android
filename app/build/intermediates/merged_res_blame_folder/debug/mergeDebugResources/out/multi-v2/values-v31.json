@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.workdiary.app-mergeDebugResources-73:/values-v31/values-v31.xml",
+            "map": [
+                {
+                    "source": "/Users/aiworker/.gradle/caches/9.0.0/transforms/f3bdf0ff59bc721e3d3b69da6b453a99/transformed/jetified-core-splashscreen-1.0.1/res/values-v31/values-v31.xml",
+                    "from": {
+                        "startLines": "2,9",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,473",
+                        "endLines": "8,13",
+                        "endColumns": "12,12",
+                        "endOffsets": "468,697"
+                    }
+                }
+            ]
+        }
+    ]
+}

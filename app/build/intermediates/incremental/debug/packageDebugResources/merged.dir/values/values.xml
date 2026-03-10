@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#0D1B2A</color>
+    <color name="navy_900">#0D1B2A</color>
+    <color name="teal_200">#2BBFBF</color>
+    <color name="teal_700">#1A8F8F</color>
+    <string name="app_name">My Work Diary</string>
+    <string name="cd_nav_balance">Open leave balance dashboard</string>
+    <string name="cd_nav_calendar">Open calendar view</string>
+    <string name="cd_nav_holidays">Open booked holidays</string>
+    <string name="cd_nav_settings">Open settings</string>
+    <string name="nav_balance">Balance</string>
+    <string name="nav_calendar">Calendar</string>
+    <string name="nav_holidays">Holidays</string>
+    <string name="nav_settings">Settings</string>
+    <string name="shortcut_today_long">Check Today\'s Duty</string>
+    <string name="shortcut_today_short">Today\'s Duty</string>
+    <string name="shortcut_tomorrow_long">Check Tomorrow\'s Duty</string>
+    <string name="shortcut_tomorrow_short">Tomorrow\'s Duty</string>
+    <style name="Theme.WorkDiary" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/navy_900</item>
+        <item name="android:statusBarColor">@color/navy_900</item>
+        <item name="android:navigationBarColor">@color/navy_900</item>
+    </style>
+    <style name="Theme.WorkDiary.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/navy_900</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.WorkDiary</item>
+    </style>
+</resources>

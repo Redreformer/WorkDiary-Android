@@ -69,91 +69,71 @@ android {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Version constants (override via libs.versions.toml for multi-module projects)
-// ─────────────────────────────────────────────────────────────────────────────
-
-val composeBoM         = "2024.06.00"
-val roomVersion        = "2.6.1"
-val hiltVersion        = "2.51.1"
-val hiltNavVersion     = "1.2.0"
-val navVersion         = "2.7.7"
-val coilVersion        = "2.7.0"
-val serializationVer   = "1.7.1"
-val pdfiumVersion      = "1.0.3"          // io.legere:pdfiumandroid
-
 dependencies {
 
     // ── Kotlin stdlib ─────────────────────────────────────────────────────────
     implementation(libs.kotlin.stdlib)
 
     // ── Compose BOM (pins all Compose library versions together) ─────────────
-    val composeBom = platform("androidx.compose:compose-bom:$composeBoM")
-    implementation(composeBom)
-    androidTestImplementation(composeBom)
+    implementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(platform(libs.androidx.compose.bom))
 
     // ── Jetpack Compose core ──────────────────────────────────────────────────
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.foundation:foundation")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.foundation)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // ── Material 3 ────────────────────────────────────────────────────────────
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
 
     // ── Activity + Lifecycle ──────────────────────────────────────────────────
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
 
     // ── Navigation Compose ────────────────────────────────────────────────────
-    implementation("androidx.navigation:navigation-compose:$navVersion")
+    implementation(libs.androidx.navigation.compose)
 
     // ── Hilt dependency injection ─────────────────────────────────────────────
-    implementation("com.google.dagger:hilt-android:$hiltVersion")
-    ksp("com.google.dagger:hilt-compiler:$hiltVersion")
-    implementation("androidx.hilt:hilt-navigation-compose:$hiltNavVersion")
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     // ── Room (local database) ─────────────────────────────────────────────────
-    implementation("androidx.room:room-runtime:$roomVersion")
-    implementation("androidx.room:room-ktx:$roomVersion")
-    ksp("androidx.room:room-compiler:$roomVersion")
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     // ── kotlinx.serialization ─────────────────────────────────────────────────
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serializationVer")
+    implementation(libs.kotlinx.serialization.json)
 
     // ── Coil (image loading) ──────────────────────────────────────────────────
-    implementation("io.coil-kt:coil-compose:$coilVersion")
+    implementation(libs.coil.compose)
 
-    // ── PdfiumAndroid (PDF text extraction + rendering) ───────────────────────
-    // Used by PDFManager equivalent to search duty board PDFs.
-    // Note: android-pdf-viewer wraps pdfium-android and provides a ready-to-use View.
-    implementation("com.github.barteksc:android-pdf-viewer:3.2.0-beta.1")
+    // ── PdfiumAndroid (PDF rendering engine — PdfiumCore/PdfDocument API) ────
+    implementation(libs.android.pdf.viewer)
 
     // ── ML Kit Text Recognition (OCR) ─────────────────────────────────────────
-    // Android equivalent of Apple Vision VNRecognizeTextRequest.
-    // Used by DutyScanner to extract duty number + sign-on/off times from photos.
-    // Bundled model variant — no network access required for inference.
-    implementation("com.google.mlkit:text-recognition:16.0.0")
+    implementation(libs.mlkit.text.recognition)
 
     // ── DataStore (SharedPreferences replacement) ─────────────────────────────
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation(libs.androidx.datastore.preferences)
 
     // ── Coroutines ────────────────────────────────────────────────────────────
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation(libs.kotlinx.coroutines.android)
 
     // ── WorkManager (background notifications / alarms) ───────────────────────
-    implementation("androidx.work:work-runtime-ktx:2.9.1")
-    implementation("androidx.hilt:hilt-work:$hiltNavVersion")
-    ksp("androidx.hilt:hilt-compiler:$hiltNavVersion")
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
 
     // ── Splash screen API ─────────────────────────────────────────────────────
-    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation(libs.androidx.core.splashscreen)
 
     // ─────────────────────────────────────────────────────────────────────────
     // Test dependencies
@@ -161,6 +141,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    androidTestImplementation("androidx.room:room-testing:$roomVersion")
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.room.testing)
 }

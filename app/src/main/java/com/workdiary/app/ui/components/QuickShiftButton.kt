@@ -26,7 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.workdiary.app.ui.viewmodels.SettingsViewModel
+import com.workdiary.app.ui.screens.SettingsViewModel
 
 /**
  * A compact full-width button with a **vertical** icon-above-label layout, mirroring
@@ -131,7 +131,8 @@ fun QuickShiftButtonConnected(
     accessibilityLabel: String = label,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    val isDarkMode by viewModel.isDarkTheme.collectAsState(initial = true)
+    val uiState by viewModel.uiState.collectAsState()
+    val isDarkMode = uiState.isDarkMode
 
     QuickShiftButton(
         label              = label,

@@ -3,6 +3,7 @@ package com.workdiary.app.ui.screens
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -77,8 +78,8 @@ fun SplashScreen(
         val animSpec = tween<Float>(durationMillis = 800, easing = FastOutSlowInEasing)
         // Fire both animations together
         kotlinx.coroutines.coroutineScope {
-            kotlinx.coroutines.launch { scale.animateTo(targetValue = 1f, animationSpec = animSpec) }
-            kotlinx.coroutines.launch { opacity.animateTo(targetValue = 1f, animationSpec = animSpec) }
+            launch { scale.animateTo(targetValue = 1f, animationSpec = animSpec) }
+            launch { opacity.animateTo(targetValue = 1f, animationSpec = animSpec) }
         }
     }
 

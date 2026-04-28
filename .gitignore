@@ -1,0 +1,36 @@
+# Built application files
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Build directories
+app/build/
+build/
+
+# Gradle
+.gradle/
+local.properties
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+
+# Kotlin
+.kotlin/
+
+# Signing keys — NEVER commit these
+*.keystore
+*.jks
+
+# Google Services — contains API keys
+google-services.json
+
+# Signing credentials — contains passwords
+gradle.properties
+
+# Play Store assets (private)
+PlayStore/

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Data extraction rules for Cloud Backup and Device Transfer (API 31+).
+    Mirrors the backup_rules.xml intent: exclude large binary files,
+    allow DataStore preferences to roam.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <!-- Allow DataStore (shared_prefs directory) to transfer; exclude raw files. -->
+        <exclude domain="file" path="." />
+    </device-transfer>
+</data-extraction-rules>
